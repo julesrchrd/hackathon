@@ -7,8 +7,8 @@ const STATUS_COLOR = Object.fromEntries(STATUSES.map(s => [s.value, s.color]))
 
 function createPinIcon(status, isSelected) {
   const color = STATUS_COLOR[status] || '#6b7280'
-  const size = isSelected ? 20 : 14
-  const glow = isSelected ? `0 0 18px ${color}cc, 0 0 6px ${color}` : `0 0 8px ${color}80`
+  const size = isSelected ? 20 : 10
+  const glow = isSelected ? `0 0 18px ${color}cc, 0 0 6px ${color}` : `0 0 6px ${color}60`
 
   return L.divIcon({
     html: `
@@ -19,7 +19,7 @@ function createPinIcon(status, isSelected) {
           height:${size}px;
           border-radius:50%;
           background:${color};
-          border:2px solid ${isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.2)'};
+          border:2px solid ${isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)'};
           box-shadow:${glow};
           transition:all 0.2s ease;
           position:relative;
@@ -37,7 +37,7 @@ function FlyTo({ mine }) {
   const map = useMap()
   useEffect(() => {
     if (mine) {
-      map.flyTo(mine.coordinates, Math.max(map.getZoom(), 7), { duration: 0.9, easeLinearity: 0.4 })
+      map.flyTo(mine.coordinates, Math.max(map.getZoom(), 9), { duration: 0.9, easeLinearity: 0.4 })
     }
   }, [mine, map])
   return null
@@ -61,16 +61,16 @@ function Legend() {
 }
 
 export default function MapView({ mines, selectedMine, onMineSelect }) {
-  const europeBounds = [[35, -15], [72, 42]]
+  const franceBounds = [[41.3, -5.5], [51.1, 9.6]]
 
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        bounds={europeBounds}
+        bounds={franceBounds}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         minZoom={4}
-        maxZoom={14}
+        maxZoom={18}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

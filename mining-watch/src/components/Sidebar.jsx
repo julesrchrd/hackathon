@@ -1,9 +1,15 @@
 import { useState } from 'react'
-import { Search, SlidersHorizontal, X, ChevronDown, Gem } from 'lucide-react'
-import { MINERAL_TYPES, STATUSES, COUNTRIES } from '../data/mines'
+import { Search, SlidersHorizontal, X, ChevronDown, RefreshCw } from 'lucide-react'
+import { STATUSES } from '../data/mines'
 
-export default function Sidebar({ searchQuery, onSearchChange, filters, onFiltersChange, resultCount }) {
-  const [expanded, setExpanded] = useState({ status: true, mineral: false, country: false })
+export default function Sidebar({
+  searchQuery, onSearchChange,
+  filters, onFiltersChange,
+  availableSubstances,
+  loading, error,
+  onRefresh,
+}) {
+  const [expanded, setExpanded] = useState({ status: true, substance: false })
 
   const toggle = (key) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
 
@@ -13,24 +19,31 @@ export default function Sidebar({ searchQuery, onSearchChange, filters, onFilter
     onFiltersChange({ ...filters, [key]: next })
   }
 
-  const clearFilters = () => onFiltersChange({ status: [], mineral_type: [], country: [] })
+  const clearFilters = () => onFiltersChange({ status: [], substance: [] })
 
   const activeCount = Object.values(filters).reduce((n, arr) => n + arr.length, 0)
 
   return (
     <aside className="w-72 h-full flex flex-col bg-[#12151e] border-r border-[#1e2437] shrink-0">
 
-      {/* ── Logo ── */}
+      {/* Bouton de refresh + titre*/}
       <div className="px-5 pt-5 pb-4 border-b border-[#1e2437]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-            <Gem className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div>
+              <h1 className="text-white font-semibold text-base leading-none tracking-tight">Outil de Veille minière</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-white font-semibold text-base leading-none tracking-tight">MineWatch</h1>
-            <p className="text-slate-500 text-xs mt-0.5">Veille minière européenne</p>
-          </div>
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            title="Rafraîchir les données"
+            className="p-2 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-amber-400' : ''}`} />
+          </button>
         </div>
+
       </div>
 
       {/* ── Recherche ── */}
@@ -41,7 +54,7 @@ export default function Sidebar({ searchQuery, onSearchChange, filters, onFilter
             type="text"
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            placeholder="Nom, pays, minéral, opérateur…"
+            placeholder="Nom, substance, commune…"
             className="w-full bg-[#1a1d2e] text-slate-200 placeholder-slate-600 text-sm
                        pl-9 pr-8 py-2.5 rounded-lg border border-[#252840]
                        focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20
@@ -89,36 +102,22 @@ export default function Sidebar({ searchQuery, onSearchChange, filters, onFilter
           ))}
         </FilterSection>
 
-        <FilterSection title="Type de minéral" open={expanded.mineral} onToggle={() => toggle('mineral')}>
-          {MINERAL_TYPES.map(m => (
-            <CheckItem
-              key={m}
-              label={m}
-              checked={(filters.mineral_type || []).includes(m)}
-              onChange={() => toggleFilter('mineral_type', m)}
-            />
-          ))}
+        <FilterSection title="Substance" open={expanded.substance} onToggle={() => toggle('substance')}>
+          {availableSubstances?.length > 0
+            ? availableSubstances.map(s => (
+                <CheckItem
+                  key={s}
+                  label={s}
+                  checked={(filters.substance || []).includes(s)}
+                  onChange={() => toggleFilter('substance', s)}
+                />
+              ))
+            : <p className="text-xs text-slate-600 py-1">Chargement…</p>
+          }
         </FilterSection>
 
-        <FilterSection title="Pays" open={expanded.country} onToggle={() => toggle('country')}>
-          {COUNTRIES.map(c => (
-            <CheckItem
-              key={c}
-              label={c}
-              checked={(filters.country || []).includes(c)}
-              onChange={() => toggleFilter('country', c)}
-            />
-          ))}
-        </FilterSection>
       </div>
 
-      {/* ── Compteur résultats ── */}
-      <div className="px-4 py-3 border-t border-[#1e2437]">
-        <p className="text-xs text-slate-500">
-          <span className="text-slate-300 font-semibold">{resultCount}</span>{' '}
-          projet{resultCount !== 1 ? 's' : ''} affiché{resultCount !== 1 ? 's' : ''}
-        </p>
-      </div>
     </aside>
   )
 }
@@ -148,9 +147,7 @@ function CheckItem({ label, checked, onChange, accentColor }) {
       <div
         onClick={onChange}
         className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-all
-          ${checked
-            ? 'border-transparent'
-            : 'border-slate-600 group-hover:border-slate-400'}`}
+          ${checked ? 'border-transparent' : 'border-slate-600 group-hover:border-slate-400'}`}
         style={checked ? { backgroundColor: accentColor || '#f59e0b' } : {}}
       >
         {checked && (

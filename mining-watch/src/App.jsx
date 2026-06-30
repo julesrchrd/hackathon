@@ -1,36 +1,71 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import MapView from './components/MapView'
 import MineDetailPanel from './components/MineDetailPanel'
-import { mines as allMines } from './data/mines'
+import { loadMinesFromDb, syncFromApis } from './services/syncMines'
 
 export default function App() {
+  const [mines, setMines] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [error, setError] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
   const [selectedMine, setSelectedMine] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filters, setFilters] = useState({ status: [], mineral_type: [], country: [] })
+  const [filters, setFilters] = useState({ status: [], substance: [] })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await loadMinesFromDb()
+      setMines(data)
+      setLastUpdated(new Date())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const refresh = useCallback(async () => {
+    setSyncing(true)
+    setError(null)
+    try {
+      await syncFromApis()
+      await load()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSyncing(false)
+    }
+  }, [load])
+
+  useEffect(() => { load() }, [load])
+
+  const availableSubstances = useMemo(() => {
+    const set = new Set()
+    mines.forEach(m => m.substances.forEach(s => set.add(s)))
+    return [...set].sort()
+  }, [mines])
 
   const filteredMines = useMemo(() => {
-    return allMines.filter(mine => {
+    return mines.filter(mine => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         const hit =
           mine.name.toLowerCase().includes(q) ||
-          mine.country.toLowerCase().includes(q) ||
           (mine.company || '').toLowerCase().includes(q) ||
-          (mine.mineral_type || '').toLowerCase().includes(q) ||
-          (mine.region || '').toLowerCase().includes(q)
+          (mine.region || '').toLowerCase().includes(q) ||
+          mine.substances.some(s => s.toLowerCase().includes(q)) ||
+          mine.communes.some(c => c.toLowerCase().includes(q))
         if (!hit) return false
       }
       if (filters.status.length && !filters.status.includes(mine.status)) return false
-      if (filters.mineral_type.length && !filters.mineral_type.includes(mine.mineral_type)) return false
-      if (filters.country.length && !filters.country.includes(mine.country)) return false
+      if (filters.substance.length && !mine.substances.some(s => filters.substance.includes(s))) return false
       return true
     })
-  }, [searchQuery, filters])
-
-  const handleMineSelect = (mine) => {
-    setSelectedMine(prev => (prev?.id === mine.id ? null : mine))
-  }
+  }, [mines, searchQuery, filters])
 
   return (
     <div className="flex h-screen bg-[#0f1117] overflow-hidden">
@@ -40,19 +75,38 @@ export default function App() {
         filters={filters}
         onFiltersChange={setFilters}
         resultCount={filteredMines.length}
+        totalCount={mines.length}
+        availableSubstances={availableSubstances}
+        loading={loading || syncing}
+        error={error}
+        lastUpdated={lastUpdated}
+        onRefresh={refresh}
       />
 
       <div className="flex-1 relative overflow-hidden">
+        {loading && mines.length === 0 && (
+          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-[#0f1117]/95 gap-3">
+            <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+            <p className="text-slate-400 text-sm">{syncing ? 'Synchronisation des APIs…' : 'Chargement depuis la base de données…'}</p>
+          </div>
+        )}
+        {error && mines.length === 0 && (
+          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-[#0f1117]/95 gap-3">
+            <p className="text-red-400 text-sm">Erreur : {error}</p>
+            <button
+              onClick={load}
+              className="px-4 py-2 text-xs rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
         <MapView
           mines={filteredMines}
           selectedMine={selectedMine}
-          onMineSelect={handleMineSelect}
+          onMineSelect={m => setSelectedMine(prev => prev?.id === m.id ? null : m)}
         />
-
-        <MineDetailPanel
-          mine={selectedMine}
-          onClose={() => setSelectedMine(null)}
-        />
+        <MineDetailPanel mine={selectedMine} onClose={() => setSelectedMine(null)} />
       </div>
     </div>
   )

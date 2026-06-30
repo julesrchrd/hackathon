@@ -27,6 +27,31 @@ export default defineConfig({
         secure: false,
         rewrite: path => path.replace(/^\/api\/nlog/, ''),
       },
+      '/api/dmf': {
+        target: 'https://www.dirmin.no',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/dmf/, ''),
+      },
+      '/api/igme': {
+        target: 'https://mapas.igme.es',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/igme/, ''),
+      },
+      '/api/geosphere': {
+        target: 'https://gis.geosphere.at',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/geosphere/, ''),
+      },
+      '/api/cgs': {
+        target: 'https://mapy.geology.cz',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/cgs/, ''),
+      },
+      '/api/geoswiss': {
+        target: 'https://api3.geo.admin.ch',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/geoswiss/, ''),
+      },
     },
   },
 })

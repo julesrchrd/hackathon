@@ -33,10 +33,10 @@ export default function App() {
     setError(null)
     try {
       await syncFromApis()
-      await load()
     } catch (e) {
       setError(e.message)
     } finally {
+      await load()
       setSyncing(false)
     }
   }, [load])

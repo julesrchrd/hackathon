@@ -76,14 +76,19 @@ export default function MapView({ mines, selectedMine, onMineSelect }) {
 
         <ZoomControl position="bottomright" />
 
-        {mines.map(mine => (
-          <Marker
-            key={mine.id}
-            position={mine.coordinates}
-            icon={createPinIcon(mine.status, selectedMine?.id === mine.id)}
-            eventHandlers={{ click: () => onMineSelect(mine) }}
-          />
-        ))}
+        {mines
+          .filter(mine => {
+            const [lat, lon] = mine.coordinates ?? []
+            return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+          })
+          .map(mine => (
+            <Marker
+              key={mine.id}
+              position={mine.coordinates}
+              icon={createPinIcon(mine.status, selectedMine?.id === mine.id)}
+              eventHandlers={{ click: () => onMineSelect(mine) }}
+            />
+          ))}
 
         {selectedMine && <FlyTo mine={selectedMine} />}
       </MapContainer>

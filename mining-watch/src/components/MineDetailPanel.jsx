@@ -1,6 +1,18 @@
 import { X } from 'lucide-react'
 import { STATUSES } from '../data/mines'
 
+const SOURCE_LABELS = {
+  camino:      'Camino · France',
+  gtk:         'GTK · Finlande',
+  dmf:         'DMF · Norvège',
+  nlog:        'NLOG · Pays-Bas',
+  'midas-og':  'MIDAS · Pologne',
+  igme:        'IGME · Espagne',
+  geosphere:   'GeoSphere · Autriche',
+  cgs:         'CGS · Rép. tchèque',
+  swisstopo:   'Swisstopo · Suisse',
+}
+
 export default function MineDetailPanel({ mine, onClose }) {
   return (
     <div
@@ -27,7 +39,12 @@ function Content({ mine, onClose }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h2 className="text-gray-900 font-semibold text-lg leading-snug">{mine.name}</h2>
-            <div className="flex items-center gap-3 mt-1.5">
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {mine.country && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">
+                  {mine.country}
+                </span>
+              )}
               <span className="text-xs font-medium" style={{ color: status?.color || '#6b7280' }}>
                 {status?.label || mine.status}
               </span>
@@ -65,10 +82,12 @@ function Content({ mine, onClose }) {
           </div>
         </Section>
 
-        {/* Source GTK */}
-        {mine.source === 'gtk' && (
+        {/* Source badge */}
+        {SOURCE_LABELS[mine.source] && (
           <Section>
-            <span className="text-xs text-sky-600 font-medium">Source : GTK Finland</span>
+            <span className="text-xs text-sky-600 font-medium">
+              Source : {SOURCE_LABELS[mine.source]}
+            </span>
           </Section>
         )}
 

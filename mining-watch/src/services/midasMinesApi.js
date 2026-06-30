@@ -36,7 +36,8 @@ function centroidFromRings(rings) {
 
 function msToDate(ms) {
   if (!ms) return null
-  return new Date(ms).toISOString().slice(0, 10)
+  const d = new Date(ms)
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
 function transformFeature(feature) {

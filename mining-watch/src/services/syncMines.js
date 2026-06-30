@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient'
 import { fetchMines } from './caminoApi'
 import { fetchGtkMines } from './gtkApi'
+import { fetchNlogMines } from './nlogApi'
+import { fetchMidasMines } from './midasMinesApi'
 
 function mineToRow(mine) {
   return {
@@ -37,18 +39,24 @@ function mineToRow(mine) {
 }
 
 export async function syncFromApis() {
-  const [caminoResult, gtkResult] = await Promise.allSettled([
+  const [caminoResult, gtkResult, nlogResult, midasResult] = await Promise.allSettled([
     fetchMines(),
     fetchGtkMines(),
+    fetchNlogMines(),
+    fetchMidasMines(),
   ])
 
   const caminoMines = caminoResult.status === 'fulfilled' ? caminoResult.value : []
-  const gtkMines    = gtkResult.status   === 'fulfilled' ? gtkResult.value   : []
+  const gtkMines    = gtkResult.status    === 'fulfilled' ? gtkResult.value    : []
+  const nlogMines   = nlogResult.status   === 'fulfilled' ? nlogResult.value   : []
+  const midasMines  = midasResult.status  === 'fulfilled' ? midasResult.value  : []
 
-  if (caminoResult.status === 'rejected') console.error('Camino sync failed:', caminoResult.reason)
-  if (gtkResult.status   === 'rejected') console.error('GTK sync failed:',    gtkResult.reason)
+  if (caminoResult.status === 'rejected') console.error('Camino sync failed:',   caminoResult.reason)
+  if (gtkResult.status    === 'rejected') console.error('GTK sync failed:',      gtkResult.reason)
+  if (nlogResult.status   === 'rejected') console.error('NLOG sync failed:',     nlogResult.reason)
+  if (midasResult.status  === 'rejected') console.error('MIDAS-OG sync failed:', midasResult.reason)
 
-  const allMines = [...caminoMines, ...gtkMines]
+  const allMines = [...caminoMines, ...gtkMines, ...nlogMines, ...midasMines]
   const rows = allMines.map(mineToRow)
 
   const { error } = await supabase
@@ -58,7 +66,7 @@ export async function syncFromApis() {
   if (error) throw new Error(`Supabase upsert failed: ${error.message}`)
 
   await supabase.from('sync_log').insert({
-    source:      'camino+gtk',
+    source:      'camino+gtk+nlog+midas-og',
     finished_at: new Date().toISOString(),
     mines_count: rows.length,
     success:     true,

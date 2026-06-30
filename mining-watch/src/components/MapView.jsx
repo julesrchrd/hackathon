@@ -8,22 +8,16 @@ const STATUS_COLOR = Object.fromEntries(STATUSES.map(s => [s.value, s.color]))
 function createPinIcon(status, isSelected) {
   const color = STATUS_COLOR[status] || '#6b7280'
   const size = isSelected ? 20 : 10
-  const glow = isSelected ? `0 0 18px ${color}cc, 0 0 6px ${color}` : `0 0 6px ${color}60`
 
   return L.divIcon({
     html: `
-      <div style="width:${size + 12}px;height:${size + 12}px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;">
-        ${isSelected ? `<div class="mine-pin-pulse" style="background:${color};position:absolute;inset:-4px;border-radius:50%;"></div>` : ''}
+      <div style="width:${size + 12}px;height:${size + 12}px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
         <div style="
           width:${size}px;
           height:${size}px;
           border-radius:50%;
           background:${color};
           border:2px solid ${isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)'};
-          box-shadow:${glow};
-          transition:all 0.2s ease;
-          position:relative;
-          z-index:1;
         "></div>
       </div>
     `,
@@ -61,12 +55,12 @@ function Legend() {
 }
 
 export default function MapView({ mines, selectedMine, onMineSelect }) {
-  const franceBounds = [[41.3, -5.5], [51.1, 9.6]]
+  const europeBounds = [[34, -12], [55, 30]]
 
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        bounds={franceBounds}
+        bounds={europeBounds}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         minZoom={4}

@@ -67,6 +67,31 @@ export default function App() {
     })
   }, [mines, searchQuery, filters])
 
+  const handleExport = useCallback(() => {
+    const headers = ['Nom', 'Statut', 'Région', 'Titulaire', 'Surface (ha)', 'Type de titre', 'Domaine', 'Substances', 'Communes']
+    const rows = filteredMines.map(m => [
+      m.name,
+      m.status,
+      m.region || '',
+      m.company || '',
+      m.surface_ha != null ? m.surface_ha : '',
+      m.type_titre || '',
+      m.domaine || '',
+      m.substances.join(' | '),
+      m.communes.join(' | '),
+    ])
+    const csv = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mines_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [filteredMines])
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar
@@ -81,6 +106,8 @@ export default function App() {
         error={error}
         lastUpdated={lastUpdated}
         onRefresh={refresh}
+        onExport={handleExport}
+        exportCount={filteredMines.length}
       />
 
       <div className="flex-1 relative overflow-hidden">

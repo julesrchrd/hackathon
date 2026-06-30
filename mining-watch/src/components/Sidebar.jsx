@@ -8,6 +8,8 @@ export default function Sidebar({
   availableSubstances,
   loading, error,
   onRefresh,
+  onExport,
+  exportCount,
 }) {
   const [expanded, setExpanded] = useState({ status: true, substance: false })
 
@@ -39,6 +41,17 @@ export default function Sidebar({
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-gray-500' : ''}`} />
           </button>
         </div>
+      </div>
+
+      {/* Export CSV */}
+      <div className="px-4 py-2.5 border-b border-gray-200">
+        <button
+          onClick={onExport}
+          disabled={exportCount === 0}
+          className="w-full text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 border border-gray-200 rounded px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left"
+        >
+          Exporter en CSV{exportCount > 0 ? ` (${exportCount})` : ''}
+        </button>
       </div>
 
       {/* Recherche */}

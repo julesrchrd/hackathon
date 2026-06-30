@@ -68,7 +68,7 @@ export default function App() {
   }, [mines, searchQuery, filters])
 
   return (
-    <div className="flex h-screen bg-[#0f1117] overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -85,17 +85,17 @@ export default function App() {
 
       <div className="flex-1 relative overflow-hidden">
         {loading && mines.length === 0 && (
-          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-[#0f1117]/95 gap-3">
-            <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">{syncing ? 'Synchronisation des APIs…' : 'Chargement depuis la base de données…'}</p>
+          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-gray-50/95 gap-3">
+            <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+            <p className="text-gray-500 text-sm">{syncing ? 'Synchronisation des APIs…' : 'Chargement depuis la base de données…'}</p>
           </div>
         )}
         {error && mines.length === 0 && (
-          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-[#0f1117]/95 gap-3">
-            <p className="text-red-400 text-sm">Erreur : {error}</p>
+          <div className="absolute inset-0 z-[2000] flex flex-col items-center justify-center bg-gray-50/95 gap-3">
+            <p className="text-red-500 text-sm">Erreur : {error}</p>
             <button
               onClick={load}
-              className="px-4 py-2 text-xs rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors"
+              className="px-4 py-2 text-xs rounded-lg bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200 transition-colors"
             >
               Réessayer
             </button>

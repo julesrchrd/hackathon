@@ -17,7 +17,8 @@ function createPinIcon(status, isSelected) {
           height:${size}px;
           border-radius:50%;
           background:${color};
-          border:2px solid ${isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)'};
+          border:2px solid ${isSelected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)'};
+          box-shadow:0 1px 3px rgba(0,0,0,0.25);
         "></div>
       </div>
     `,
@@ -39,15 +40,15 @@ function FlyTo({ mine }) {
 
 function Legend() {
   return (
-    <div className="absolute bottom-8 left-4 z-[1000] bg-[#12151e]/90 backdrop-blur-md border border-[#1e2437] rounded-xl px-3.5 py-3 space-y-2">
-      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Statut</p>
+    <div className="absolute bottom-8 left-4 z-[1000] bg-white/90 backdrop-blur-md border border-gray-200 rounded-lg px-3.5 py-3 space-y-2 shadow-sm">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Statut</p>
       {STATUSES.map(s => (
         <div key={s.value} className="flex items-center gap-2.5">
           <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}80` }}
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: s.color }}
           />
-          <span className="text-xs text-slate-400">{s.label}</span>
+          <span className="text-xs text-gray-600">{s.label}</span>
         </div>
       ))}
     </div>
@@ -67,7 +68,7 @@ export default function MapView({ mines, selectedMine, onMineSelect }) {
         maxZoom={18}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
           subdomains="abcd"
           maxZoom={19}

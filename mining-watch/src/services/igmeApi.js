@@ -81,13 +81,33 @@ async function fetchAllPages() {
   return features
 }
 
+function centroid(rings) {
+  const ring = rings?.[0]
+  if (!ring?.length) return null
+  return [
+    ring.reduce((s, p) => s + p[1], 0) / ring.length,
+    ring.reduce((s, p) => s + p[0], 0) / ring.length,
+  ]
+}
+
 function transformFeature(f) {
   const a = f.attributes
   const status = STATUS_MAP_ES[a.Estado_Explotacion]
   if (!status) return null
 
   const g = f.geometry
-  if (!g || g.x == null || g.y == null) return null
+  let lat, lon
+  if (g?.x != null && g?.y != null) {
+    // Point
+    lat = g.y; lon = g.x
+  } else if (g?.rings) {
+    // Polygon — compute centroid
+    const c = centroid(g.rings)
+    if (!c) return null
+    ;[lat, lon] = c
+  } else {
+    return null
+  }
 
   const substances = parseSubstances(a.Sustancia)
   const typeLabel = [a.Forma_Explotacion, a.Usos].filter(Boolean).join(' — ')
@@ -106,7 +126,7 @@ function transformFeature(f) {
     country:     'Espagne',
     region:      a.Provincia || '',
     communes:    a.Municipio ? [a.Municipio] : [],
-    coordinates: [g.y, g.x],
+    coordinates: [lat, lon],
     company:     null,
     surface_ha:  null,
     permits:     [a.Codigo_roca].filter(Boolean),

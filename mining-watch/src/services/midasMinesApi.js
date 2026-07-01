@@ -4,24 +4,38 @@
 const MIDAS_LAYER = '/api/midas/MapServer/1/query'
 
 const KOPALINA_FR = {
-  // métaux
-  'rudy miedzi':        'cuivre',
-  'rudy cynku':         'zinc',
-  'rudy ołowiu':        'plomb',
-  'rudy cynku i ołowiu':'zinc-plomb',
-  'rudy żelaza':        'fer',
-  'rudy niklu':         'nickel',
-  'rudy złota':         'or',
-  'rudy arsenu':        'arsenic',
-  'rudy cyny':          'étain',
-  'rudy chromu':        'chrome',
-  'rudy kobaltu':       'cobalt',
-  'rudy molibdenu':     'molybdène',
-  'rudy wanadu':        'vanadium',
-  'rudy tytanu':        'titane',
-  'rudy manganu':       'manganèse',
-  'rudy uranu':         'uranium',
-  'rudy litu':          'lithium',
+  // métaux — formes complètes et combinées (ex. KGHM: 'rudy miedzi i srebra')
+  'rudy miedzi':              'cuivre',
+  'rudy miedzi i srebra':     'cuivre',
+  'rudy cynku':               'zinc',
+  'rudy ołowiu':              'plomb',
+  'rudy cynku i ołowiu':      'zinc-plomb',
+  'rudy cynku, ołowiu i srebra': 'zinc-plomb',
+  'rudy żelaza':              'fer',
+  'rudy niklu':               'nickel',
+  'rudy złota':               'or',
+  'rudy arsenu':              'arsenic',
+  'rudy cyny':                'étain',
+  'rudy chromu':              'chrome',
+  'rudy kobaltu':             'cobalt',
+  'rudy molibdenu':           'molybdène',
+  'rudy wanadu':              'vanadium',
+  'rudy tytanu':              'titane',
+  'rudy manganu':             'manganèse',
+  'rudy uranu':               'uranium',
+  'rudy litu':                'lithium',
+  // tokens polonais seuls (quand 'i' est séparateur)
+  'srebra':    'argent',
+  'srebro':    'argent',
+  'złoto':     'or',
+  'miedź':     'cuivre',
+  'cynku':     'zinc',
+  'ołowiu':    'plomb',
+  'żelaza':    'fer',
+  'niklu':     'nickel',
+  'kobaltu':   'cobalt',
+  'uranu':     'uranium',
+  'litu':      'lithium',
   // charbon
   'węgiel kamienny':    'houille',
   'węgiel brunatny':    'lignite',
@@ -64,12 +78,12 @@ const KOPALINA_FR = {
 
 function parseSubstances(kopalina) {
   if (!kopalina) return []
-  return [...new Set(
-    kopalina.split(',').map(s => {
-      const key = s.trim().toLowerCase()
-      return KOPALINA_FR[key] || key  // conserve la valeur brute si pas de traduction
-    }).filter(Boolean)
-  )]
+  // Try full string first (handles 'rudy miedzi i srebra' as a unit)
+  const full = kopalina.trim().toLowerCase()
+  if (KOPALINA_FR[full]) return [KOPALINA_FR[full]]
+  // Split on commas and Polish 'i' (= "et") then translate each token
+  const parts = full.split(/[,/]|\s+i\s+/).map(s => s.trim()).filter(Boolean)
+  return [...new Set(parts.map(k => KOPALINA_FR[k] || k).filter(Boolean))]
 }
 
 function centroidFromRings(rings) {

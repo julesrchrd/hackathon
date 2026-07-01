@@ -1,18 +1,65 @@
-// Polish MIDAS layer 1 — active mining concessions (obszary górnicze)
-// Only metal ores (RUDY), status aktualny. Source: PGI-NRI / cbdgmapa.pgi.gov.pl
+// Polish MIDAS layer 1 — active mining concessions (obszary górnicze), all minerals.
+// Source: PGI-NRI / cbdgmapa.pgi.gov.pl
 
 const MIDAS_LAYER = '/api/midas/MapServer/1/query'
 
 const KOPALINA_FR = {
-  'rudy miedzi':   'cuivre',
-  'rudy cynku':    'zinc',
-  'rudy ołowiu':   'plomb',
-  'rudy żelaza':   'fer',
-  'rudy niklu':    'nickel',
-  'rudy złota':    'or',
-  'rudy arsenu':   'arsenic',
-  'rudy cyny':     'étain',
-  'rudy chromu':   'chrome',
+  // métaux
+  'rudy miedzi':        'cuivre',
+  'rudy cynku':         'zinc',
+  'rudy ołowiu':        'plomb',
+  'rudy cynku i ołowiu':'zinc-plomb',
+  'rudy żelaza':        'fer',
+  'rudy niklu':         'nickel',
+  'rudy złota':         'or',
+  'rudy arsenu':        'arsenic',
+  'rudy cyny':          'étain',
+  'rudy chromu':        'chrome',
+  'rudy kobaltu':       'cobalt',
+  'rudy molibdenu':     'molybdène',
+  'rudy wanadu':        'vanadium',
+  'rudy tytanu':        'titane',
+  'rudy manganu':       'manganèse',
+  'rudy uranu':         'uranium',
+  'rudy litu':          'lithium',
+  // charbon
+  'węgiel kamienny':    'houille',
+  'węgiel brunatny':    'lignite',
+  'antracyt':           'anthracite',
+  // sels et évaporites
+  'sól kamienna':       'sel',
+  'sól potasowo-magnezowa': 'sel de potasse',
+  'anhydryt':           'anhydrite',
+  'gips':               'gypse',
+  // autres minéraux industriels
+  'siarka':             'soufre',
+  'siarki':             'soufre',
+  'fosforyty':          'phosphate',
+  'baryt':              'barytine',
+  'fluoryt':            'fluorine',
+  'talk':               'talc',
+  'grafit':             'graphite',
+  'kaolin':             'kaolin',
+  // granulats et roches
+  'piaski i żwiry':     'sables et graviers',
+  'piaski':             'sable',
+  'żwiry':              'gravier',
+  'wapienie':           'calcaire',
+  'wapień':             'calcaire',
+  'dolomity':           'dolomite',
+  'dolomit':            'dolomite',
+  'granit':             'granite',
+  'bazalt':             'basalte',
+  'piaskowiec':         'grès',
+  'łupki':              'ardoise',
+  'gliny':              'argile',
+  'iły':                'argile',
+  'kreda':              'craie',
+  'margle':             'marne',
+  // hydrocarbures
+  'gaz ziemny':         'gaz naturel',
+  'ropa naftowa':       'pétrole',
+  'metan z pokładów węgla': 'méthane houiller',
 }
 
 function parseSubstances(kopalina) {
@@ -20,7 +67,7 @@ function parseSubstances(kopalina) {
   return [...new Set(
     kopalina.split(',').map(s => {
       const key = s.trim().toLowerCase()
-      return KOPALINA_FR[key] || null
+      return KOPALINA_FR[key] || key  // conserve la valeur brute si pas de traduction
     }).filter(Boolean)
   )]
 }
@@ -45,7 +92,6 @@ function transformFeature(feature) {
   if (a.STATUS !== 'aktualny') return null
 
   const substances = parseSubstances(a.KOPALINA)
-  if (!substances.length) return null
 
   const coordinates = centroidFromRings(feature.geometry?.rings)
   if (!coordinates) return null
@@ -82,7 +128,7 @@ function transformFeature(feature) {
 
 export async function fetchMidasMines() {
   const params = new URLSearchParams({
-    where:          "KOPALINA LIKE '%RUDY%' AND STATUS = 'aktualny'",
+    where:          "STATUS = 'aktualny'",
     outFields:      '*',
     returnGeometry: 'true',
     outSR:          '4326',

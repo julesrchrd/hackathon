@@ -1,8 +1,10 @@
 const GTK_LAYER = '/api/gtk/MapServer/13/query'
 
 const GTK_STATUS_MAP = {
-  'Operating':        'valide',
-  'Under development': 'demande initiale',
+  'Operating':          'valide',
+  'Under development':  'demande initiale',
+  'Temporarily closed': 'valide',
+  'Care and maintenance': 'valide',
 }
 
 // Normalize English commodity names to match Camino's French substances
@@ -78,7 +80,7 @@ function transformFeature(attrs) {
 
 export async function fetchGtkMines() {
   const params = new URLSearchParams({
-    where: "MINE_STATUS IN ('Operating', 'Under development')",
+    where: "MINE_STATUS IN ('Operating', 'Under development', 'Temporarily closed', 'Care and maintenance')",
     outFields: '*',
     f: 'json',
   })

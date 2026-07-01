@@ -4,7 +4,10 @@ const STATUS_MAP_ES = {
   'Activa continua':     'valide',
   'Activa intermitente': 'valide',
   'Activa discontinua':  'valide',
+  'Activa estacional':   'valide',
+  'En rehabilitación':   'valide',
   'En proyecto':         'demande initiale',
+  'En tramitación':      'demande initiale',
 }
 
 const SUSTANCIA_FR = {

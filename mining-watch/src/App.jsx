@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import MapView from './components/MapView'
 import MineDetailPanel from './components/MineDetailPanel'
 import { loadMinesFromDb, syncFromApis } from './services/syncMines'
+import { METALLIC_SUBSTANCES, KNOWN_STATUSES } from './data/mines'
 
 export default function App() {
   const [mines, setMines] = useState([])
@@ -43,14 +44,21 @@ export default function App() {
 
   useEffect(() => { load() }, [load])
 
+  // Pré-filtrage : uniquement les mines métalliques avec un statut connu
+  const metalMines = useMemo(() => mines.filter(mine => {
+    if (!KNOWN_STATUSES.has(mine.status)) return false
+    return mine.substances.some(s => METALLIC_SUBSTANCES.has(s))
+      || METALLIC_SUBSTANCES.has(mine.mineral_type)
+  }), [mines])
+
   const availableSubstances = useMemo(() => {
     const set = new Set()
-    mines.forEach(m => m.substances.forEach(s => set.add(s)))
+    metalMines.forEach(m => m.substances.filter(s => METALLIC_SUBSTANCES.has(s)).forEach(s => set.add(s)))
     return [...set].sort()
-  }, [mines])
+  }, [metalMines])
 
   const filteredMines = useMemo(() => {
-    return mines.filter(mine => {
+    return metalMines.filter(mine => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         const hit =
@@ -65,7 +73,7 @@ export default function App() {
       if (filters.substance.length && !mine.substances.some(s => filters.substance.includes(s))) return false
       return true
     })
-  }, [mines, searchQuery, filters])
+  }, [metalMines, searchQuery, filters])
 
   const handleExport = useCallback(() => {
     const headers = ['Nom', 'Statut', 'Région', 'Titulaire', 'Surface (ha)', 'Type de titre', 'Domaine', 'Substances', 'Communes']
@@ -100,7 +108,7 @@ export default function App() {
         filters={filters}
         onFiltersChange={setFilters}
         resultCount={filteredMines.length}
-        totalCount={mines.length}
+        totalCount={metalMines.length}
         availableSubstances={availableSubstances}
         loading={loading || syncing}
         error={error}

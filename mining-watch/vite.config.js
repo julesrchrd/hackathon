@@ -52,6 +52,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api\/geoswiss/, ''),
       },
+      '/api/copernicus': {
+        target: 'https://sh.dataspace.copernicus.eu',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/copernicus/, ''),
+      },
     },
   },
 })

@@ -1,5 +1,203 @@
-import { X } from 'lucide-react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { X, Satellite, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { STATUSES } from '../data/mines'
+
+const COPERNICUS_INSTANCE_ID = 'c28e4744-c9d0-4ca3-9003-70089fdddbef'
+const YEAR_MIN = 2018
+const YEAR_MAX = 2025
+// Index 0 = zoomed out, index max = zoomed in. Slider goes left→right = out→in.
+const ZOOM_DELTAS = [0.50, 0.30, 0.18, 0.10, 0.06, 0.035, 0.020, 0.012, 0.007, 0.004]
+const ZOOM_DEFAULT = 4
+
+function buildSentinelUrl(lat, lon, year, delta, offsetLat = 0, offsetLon = 0) {
+  const cLat = lat + offsetLat
+  const cLon = lon + offsetLon
+  const bbox = `${cLat - delta},${cLon - delta},${cLat + delta},${cLon + delta}`
+  const params = new URLSearchParams({
+    SERVICE: 'WMS',
+    VERSION: '1.3.0',
+    REQUEST: 'GetMap',
+    LAYERS: 'TRUE-COLOR-S2L2A',
+    BBOX: bbox,
+    WIDTH: 360,
+    HEIGHT: 360,
+    CRS: 'EPSG:4326',
+    FORMAT: 'image/png',
+    TIME: `${year}-01-01/${year}-12-31`,
+    PRIORITY: 'leastCC',
+    MAXCC: 30,
+  })
+  return `/api/copernicus/ogc/wms/${COPERNICUS_INSTANCE_ID}?${params}`
+}
+
+function PanButton({ onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center w-7 h-7 rounded bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+    >
+      {children}
+    </button>
+  )
+}
+
+function SatelliteViewer({ mine }) {
+  const [lat, lon] = mine.coordinates ?? []
+  const [year, setYear] = useState(2024)
+  const [zoomIdx, setZoomIdx] = useState(ZOOM_DEFAULT)
+  const [offset, setOffset] = useState([0, 0])
+  const [status, setStatus] = useState('loading')
+  // Map<url, HTMLImageElement> — kept alive to prevent GC-cancellation of in-flight requests
+  const cacheRef = useRef(new Map())
+
+  const delta = ZOOM_DELTAS[zoomIdx]
+  const step = delta * 0.6
+
+  const url = lat != null && lon != null
+    ? buildSentinelUrl(lat, lon, year, delta, offset[0], offset[1])
+    : null
+
+  const isCached = useCallback(u => {
+    const img = cacheRef.current.get(u)
+    return !!(img?.complete && img?.naturalWidth > 0)
+  }, [])
+
+  const preloadOne = useCallback(u => {
+    if (cacheRef.current.has(u)) return
+    const img = new Image()
+    img.src = u
+    cacheRef.current.set(u, img)
+  }, [])
+
+  // Show spinner only when target isn't already in cache
+  useEffect(() => {
+    if (!url) return
+    if (isCached(url)) setStatus('ok')
+    else setStatus('loading')
+  }, [url, isCached])
+
+  // Preload 4 pan neighbors + adjacent zoom levels
+  useEffect(() => {
+    if (lat == null || lon == null) return
+    const [oLat, oLon] = offset
+    const urls = [
+      buildSentinelUrl(lat, lon, year, delta, oLat + step, oLon),
+      buildSentinelUrl(lat, lon, year, delta, oLat - step, oLon),
+      buildSentinelUrl(lat, lon, year, delta, oLat, oLon - step),
+      buildSentinelUrl(lat, lon, year, delta, oLat, oLon + step),
+    ]
+    if (zoomIdx > 0)
+      urls.push(buildSentinelUrl(lat, lon, year, ZOOM_DELTAS[zoomIdx - 1], oLat, oLon))
+    if (zoomIdx < ZOOM_DELTAS.length - 1)
+      urls.push(buildSentinelUrl(lat, lon, year, ZOOM_DELTAS[zoomIdx + 1], oLat, oLon))
+    urls.forEach(preloadOne)
+  }, [lat, lon, year, delta, step, offset, zoomIdx, preloadOne])
+
+  const pan = useCallback((dLat, dLon) => {
+    setOffset(([oLat, oLon]) => [oLat + dLat, oLon + dLon])
+  }, [])
+
+  const handleYearChange = useCallback(e => {
+    setYear(Number(e.target.value))
+  }, [])
+
+  const handleZoomChange = useCallback(e => {
+    setZoomIdx(Number(e.target.value))
+    setOffset([0, 0])
+  }, [])
+
+  if (!url) return null
+
+  return (
+    <Section>
+      <div className="flex items-center justify-between mb-3">
+        <SectionTitle>
+          <span className="flex items-center gap-1.5">
+            <Satellite className="w-3 h-3" />Image satellite
+          </span>
+        </SectionTitle>
+        <span className="text-xs font-semibold text-slate-600">{year}</span>
+      </div>
+
+      {/* Image + pan overlay */}
+      <div className="relative w-full aspect-square rounded overflow-hidden bg-gray-100">
+        {status === 'loading' && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+          </div>
+        )}
+        {status === 'error' && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <p className="text-xs text-gray-400 text-center px-4">Image indisponible pour cette période</p>
+          </div>
+        )}
+        {/* No key= : React réutilise le même élément DOM → l'ancienne image reste visible pendant le chargement */}
+        <img
+          src={url}
+          alt={`Sentinel-2 ${year}`}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${status === 'ok' ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setStatus('ok')}
+          onError={() => setStatus('error')}
+        />
+
+        {/* Pan arrows overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <PanButton onClick={() => pan(step, 0)}><ChevronUp className="w-4 h-4" /></PanButton>
+          </div>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <PanButton onClick={() => pan(-step, 0)}><ChevronDown className="w-4 h-4" /></PanButton>
+          </div>
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-auto">
+            <PanButton onClick={() => pan(0, -step)}><ChevronLeft className="w-4 h-4" /></PanButton>
+          </div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-auto">
+            <PanButton onClick={() => pan(0, step)}><ChevronRight className="w-4 h-4" /></PanButton>
+          </div>
+        </div>
+      </div>
+
+      {/* Zoom slider */}
+      <div className="mt-3 px-0.5">
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Zoom</span>
+        <input
+          type="range"
+          min={0}
+          max={ZOOM_DELTAS.length - 1}
+          step={1}
+          value={zoomIdx}
+          onChange={handleZoomChange}
+          className="w-full mt-1 accent-slate-600 cursor-pointer"
+        />
+        <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+          <span>–</span>
+          <span>+</span>
+        </div>
+      </div>
+
+      {/* Year slider */}
+      <div className="mt-3 px-0.5">
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Année</span>
+        <input
+          type="range"
+          min={YEAR_MIN}
+          max={YEAR_MAX}
+          value={year}
+          onChange={handleYearChange}
+          className="w-full mt-1 accent-slate-600 cursor-pointer"
+        />
+        <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+          <span>{YEAR_MIN}</span>
+          <span>{YEAR_MAX}</span>
+        </div>
+      </div>
+
+      <p className="mt-2 text-[10px] text-gray-400 leading-relaxed">
+        Sentinel-2 L2A · Copernicus Data Space · image la moins nuageuse de l'année
+      </p>
+    </Section>
+  )
+}
 
 const SOURCE_LABELS = {
   camino:      'Camino · France',
@@ -90,6 +288,9 @@ function Content({ mine, onClose }) {
             </span>
           </Section>
         )}
+
+        {/* Satellite image viewer */}
+        <SatelliteViewer mine={mine} />
 
         {/* GTK: exploitation */}
         {mine.source === 'gtk' && (

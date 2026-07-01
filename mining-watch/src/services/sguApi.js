@@ -120,7 +120,9 @@ function loadGetMapPixels(layerName) {
     })
 
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    // No crossOrigin: image served via same-origin Vite proxy → no CORS check needed
+    // Setting crossOrigin='anonymous' would force CORS and fail since SGU doesn't send
+    // Access-Control-Allow-Origin, causing getImageData() to throw SecurityError.
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas')
@@ -129,7 +131,8 @@ function loadGetMapPixels(layerName) {
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, IMG_W, IMG_H)
         resolve(ctx.getImageData(0, 0, IMG_W, IMG_H).data)
-      } catch {
+      } catch (e) {
+        console.warn('[SGU] Canvas getImageData failed:', e.message)
         resolve(null)
       }
     }
@@ -209,6 +212,8 @@ async function sampleLayer(layerDef) {
         if (mine && !seen.has(mine.id)) seen.set(mine.id, mine)
       }
     }
+    // Small pause between batches to avoid rate-limiting
+    if (i + BATCH < queryPoints.length) await new Promise(r => setTimeout(r, 80))
   }
 
   return [...seen.values()]

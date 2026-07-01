@@ -209,6 +209,7 @@ const SOURCE_LABELS = {
   geosphere:   'GeoSphere · Autriche',
   cgs:         'CGS · Rép. tchèque',
   swisstopo:   'Swisstopo · Suisse',
+  sgu:         'SGU MRR · Suède',
 }
 
 export default function MineDetailPanel({ mine, onClose }) {

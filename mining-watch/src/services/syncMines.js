@@ -8,6 +8,7 @@ import { fetchIgmeMines } from './igmeApi'
 import { fetchGeosphereMines } from './geosphereApi'
 import { fetchCgsMines } from './cgsApi'
 import { fetchSwisstopoMines } from './swisstopoApi'
+import { fetchSguMines } from './sguApi'
 
 function mineToRow(mine) {
   return {
@@ -42,7 +43,7 @@ function mineToRow(mine) {
 }
 
 export async function syncFromApis() {
-  const [caminoResult, gtkResult, nlogResult, midasResult, dmfResult, igmeResult, geosphereResult, cgsResult, swissResult] = await Promise.allSettled([
+  const [caminoResult, gtkResult, nlogResult, midasResult, dmfResult, igmeResult, geosphereResult, cgsResult, swissResult, sguResult] = await Promise.allSettled([
     fetchMines(),
     fetchGtkMines(),
     fetchNlogMines(),
@@ -52,6 +53,7 @@ export async function syncFromApis() {
     fetchGeosphereMines(),
     fetchCgsMines(),
     fetchSwisstopoMines(),
+    fetchSguMines(),
   ])
 
   const caminoMines    = caminoResult.status    === 'fulfilled' ? caminoResult.value    : []
@@ -63,6 +65,7 @@ export async function syncFromApis() {
   const geosphereMines = geosphereResult.status === 'fulfilled' ? geosphereResult.value : []
   const cgsMines       = cgsResult.status       === 'fulfilled' ? cgsResult.value       : []
   const swissMines     = swissResult.status     === 'fulfilled' ? swissResult.value     : []
+  const sguMines       = sguResult.status       === 'fulfilled' ? sguResult.value       : []
 
   if (caminoResult.status    === 'rejected') console.error('Camino sync failed:',     caminoResult.reason)
   if (gtkResult.status       === 'rejected') console.error('GTK sync failed:',        gtkResult.reason)
@@ -73,8 +76,9 @@ export async function syncFromApis() {
   if (geosphereResult.status === 'rejected') console.error('GeoSphere sync failed:',  geosphereResult.reason)
   if (cgsResult.status       === 'rejected') console.error('CGS sync failed:',        cgsResult.reason)
   if (swissResult.status     === 'rejected') console.error('Swisstopo sync failed:',  swissResult.reason)
+  if (sguResult.status       === 'rejected') console.error('SGU sync failed:',         sguResult.reason)
 
-  const allMines = [...caminoMines, ...gtkMines, ...nlogMines, ...midasMines, ...dmfMines, ...igmeMines, ...geosphereMines, ...cgsMines, ...swissMines]
+  const allMines = [...caminoMines, ...gtkMines, ...nlogMines, ...midasMines, ...dmfMines, ...igmeMines, ...geosphereMines, ...cgsMines, ...swissMines, ...sguMines]
   // Deduplicate by id — keeps last occurrence (most recent source wins)
   const rows = [...new Map(allMines.map(mineToRow).map(r => [r.id, r])).values()]
   console.log(`[sync] ${allMines.length} mines total → ${rows.length} après déduplication`)

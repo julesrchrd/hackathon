@@ -95,7 +95,7 @@ export async function syncFromApis() {
   }
 
   await supabase.from('sync_log').insert({
-    source:      'camino+gtk+nlog+midas-og+dmf+igme+geosphere+cgs',
+    source:      'camino+gtk+nlog+midas-og+dmf+igme+geosphere+cgs+swisstopo+sgu',
     finished_at: new Date().toISOString(),
     mines_count: rows.length,
     success:     true,

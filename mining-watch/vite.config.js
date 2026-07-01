@@ -58,7 +58,7 @@ export default defineConfig({
         rewrite: path => path.replace(/^\/api\/copernicus/, ''),
       },
       '/api/sgu': {
-        target: 'https://resource.sgu.se',
+        target: 'https://maps3.sgu.se',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api\/sgu/, ''),
       },
